@@ -1,0 +1,29 @@
+version: "3"
+services:
+  openresty:
+    image: openresty/openresty:1.25.3.1-1-jammy
+    container_name: 'openresty'
+    restart: 'always'
+    ports:
+      - '80:80'
+      - '443:443'
+    networks:
+      - websocket
+    volumes:
+      - './nginx/log:/var/log/openresty'
+      - './nginx/conf.d:/etc/nginx/conf.d'
+      - './nginx/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf'
+      - './nginx/data:/data'
+      - './nginx/cert:/usr/local/openresty/nginx/cert'
+  node:
+    build:
+      context: ./node
+      dockerfile: Dockerfile
+    container_name: node-websocket
+    image: node/websocket
+    restart: 'always'
+    networks:
+      - websocket
+
+networks:
+  websocket:
