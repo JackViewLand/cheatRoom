@@ -1,65 +1,198 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chat Application</title>
+<style>
+/* 设置全局样式 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f2f2f2;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* 消息容器样式 */
+.message-container {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* 添加垂直滚动条 */
+  max-height: 70vh; /* 设置最大高度为视窗的70% */
+}
+
+/* 消息框样式 */
+.message {
+  margin: 5px;
+  padding: 10px;
+  border-radius: 5px;
+  max-width: 70%;
+}
+
+/* 左侧消息样式 */
+.left {
+  align-self: flex-start;
+  background-color: lightblue;
+}
+
+/* 右侧消息样式 */
+.right {
+  align-self: flex-end;
+  background-color: lightgreen;
+}
+
+/* 输入框和发送按钮样式 */
+.input-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  max-width: 720px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 水平居中对齐 */
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+#txtInput {
+  flex: 1; /* 让输入框自动填充剩余空间 */
+  height: auto; /* 自动高度 */
+  padding: 10px; /* 添加内边距 */
+  border-radius: 5px; /* 圆角边框 */
+  border: 1px solid #ccc; /* 添加边框 */
+  font-size: 16px; /* 字体大小 */
+  resize: none; /* 禁用输入框的大小调整功能 */
+  overflow: hidden; /* 隐藏溢出内容 */
+}
+
+#btnSend {
+  height: 40px;
+  width: 80px;
+  margin-left: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* 在小屏幕上调整样式 */
+@media screen and (max-width: 600px) {
+  .container {
+    padding: 10px;
+  }
+
+  #txtInput {
+    font-size: 14px;
+  }
+
+  #btnSend {
+    font-size: 14px;
+  }
+}
+</style>
+</head>
 <body>
+<div class="container">
+  <div id="message-container" class="message-container"></div>
+</div>
+<div class="input-container">
+  <textarea id="txtInput" placeholder="Type your message here"></textarea>
+  <button id="btnSend">Send</button>
+</div>
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script>
+// 用戶名
+var username;
 $(document).ready(function(){
+  getUsername();
+
   $('#txtInput').keypress(function(e) {
-    var key = window.event ? e.keyCode : e.which;
-    if (key == 13)
-      $('#btnSend').click();
+    // 检查是否按下了 Enter 键
+    if (e.which == 13) {
+      e.preventDefault(); // 阻止默认的换行行为
+      $('#btnSend').click(); // 模拟点击发送按钮
+    }
   });
-  $("#btnSend").on("click",function(){
-    let txt = $("#txtInput").val();
-    $("#txtInput").val("");
-    ws.send(txt);
-  })
+
+
+  // 当点击发送按钮时
+  $('#btnSend').on('click', function() {
+    const txt = $('#txtInput').val();
+    if (txt.trim() !== '') {
+      $('#txtInput').val('');
+      message = username+": "+txt
+      sendMessage(message);
+    }
+  });
 })
-//使用 WebSocket 的網址向 Server 開啟連結
-var ws = new WebSocket('ws://web.jack0420.shop/ws')
 
+// 使用 WebSocket 的網址向 Server 開啟連結
+var ws = new WebSocket('ws://web.jack0420.shop/ws');
+
+// 当 WebSocket 连接建立时
 ws.onopen = () => {
-  console.log('open connection')
-}
+  console.log('WebSocket connection opened');
+};
 
+// 当 WebSocket 连接关闭时
 ws.onclose = () => {
-  console.log('close connection');
-}
+  console.log('WebSocket connection closed');
+};
 
-//接收 Server 發送的訊息
+// 接收来自 Server 的消息
 ws.onmessage = event => {
-  if (typeof event.data === 'string') {
-    // 如果訊息是字串，直接顯示在文字框中
-    displayMessage(event.data);
-  } else if (event.data instanceof Blob) {
-    // 如果訊息是 Blob 物件，則處理為 Blob URL，並在文字框中顯示連結
-    displayBlobURL(event.data);
-  }
+  displayMessage(event.data);
+};
+
+// 获取用户名
+function getUsername() {
+  username = prompt("Please enter your username:");
 }
 
-// 顯示文字訊息
+// 发送消息
+function sendMessage(message) {
+  ws.send(message);
+}
+
+// 显示消息
 function displayMessage(message) {
-  if (!$("#txtShow").val()) {
-    $("#txtShow").val(message);
+  const messageContainer = document.getElementById('message-container');
+  const div = document.createElement('div');
+  div.classList.add('message');
+  div.textContent = message;
+
+  if (message.startsWith(username)) {
+    div.classList.add('right');
   } else {
-    $("#txtShow").val($("#txtShow").val() + "\n" + message);
+    div.classList.add('left');
   }
+
+  messageContainer.appendChild(div);
 }
 
-// 顯示 Blob 物件的 URL
-function displayBlobURL(blob) {
-  var reader = new FileReader();
-  reader.onload = function(event) {
-    var url = event.target.result;
-    var link = document.createElement('a');
-    link.href = url;
-    link.innerText = 'Download File';
-    $("#txtShow").append(link);
-  };
-  reader.readAsDataURL(blob);
-}
 
+// 当按下回车键时发送消息
+$('#txtInput').keypress(function(event) {
+  if (event.which === 13) {
+    $('#btnSend').click();
+  }
+});
 </script>
-<textarea id="txtShow" style="height:60vmin;width:80vmin" disabled></textarea></br>
-<input id="txtInput" style="width:80vmin" type="text"><input type="button" id="btnSend" value="送出">
 </body>
 </html>
